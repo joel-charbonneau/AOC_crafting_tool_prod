@@ -1,9 +1,9 @@
 from flask import Flask, request, render_template, jsonify
-import json, gdown, requests, os
+import json, requests
 from utils import build_hierarchy, calculate_total_requirements, identify_sources
 
 def fetch_all_items_json():
-    url = "https://github.com/joel-charbonneau/AOC_crafting_tool_prod/blob/main/all_items.json"  # Replace with your Raw URL
+    url = "https://github.com/joel-charbonneau/AOC_crafting_tool_prod/raw/refs/heads/main/all_items.json"  # Replace with your Raw URL
     try:
         response = requests.get(url)
         response.raise_for_status()  # Raise an error for bad responses
