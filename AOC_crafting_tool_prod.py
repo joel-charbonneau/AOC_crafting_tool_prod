@@ -2,20 +2,30 @@ from flask import Flask, request, render_template, jsonify
 import json, gdown, requests, os
 from utils import build_hierarchy, calculate_total_requirements, identify_sources
 
-def load_all_items(file_path="all_items.json"):
-    """Load the all_items.json file into memory."""
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"{file_path} does not exist. Ensure it is downloaded via GitHub LFS.")
-    
-    with open(file_path, "r", encoding="utf-8") as file:
-        return json.load(file)
+# Define the path to your JSON file
+file_path = "all_items.json"
 
-# Example usage
-try:
-    all_items = load_all_items()
-    print("Loaded all_items.json successfully!")
-except FileNotFoundError as e:
-    print(str(e))
+# Load the JSON data
+def load_all_items(file_path):
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data
+    except FileNotFoundError:
+        print(f"Error: {file_path} not found.")
+        return []
+    except json.JSONDecodeError:
+        print(f"Error: Failed to decode JSON from {file_path}.")
+        return []
+
+# Use the function to load the items
+all_items = load_all_items(file_path)
+
+# Example: Print the number of items loaded
+if all_items:
+    print(f"Successfully loaded {len(all_items)} items.")
+else:
+    print("No items loaded.")
 
 # Initialize Flask app
 app = Flask(__name__)
