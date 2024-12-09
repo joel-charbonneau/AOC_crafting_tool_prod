@@ -1,0 +1,10 @@
+Flask
+gdown==5.2.0
+gunicorn==23.0.0
+json5
+jsonpatch
+jsonpointer==2.1
+jsonschema
+jsonschema-specifications
+os
+requests

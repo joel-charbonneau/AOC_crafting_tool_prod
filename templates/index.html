@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Item Crafting Tool</title>
+    <style>
+        ul { list-style-type: none; }
+        li { margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <h1>Item Crafting Tool</h1>
+    <form id="item-form">
+        <label for="item_name">Select an Item:</label>
+        <select id="item_name" name="item_name">
+            {% for item in items %}
+            <option value="{{ item }}">{{ item }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Get Hierarchy</button>
+    </form>
+    <h2>Results:</h2>
+    <div id="results"></div>
+    <script>
+        const form = document.getElementById("item-form");
+        const resultsContainer = document.getElementById("results");
+
+        // Function to recursively create a hierarchy display
+        function createHierarchyElement(hierarchy) {
+            const ul = document.createElement("ul");
+            const li = document.createElement("li");
+
+            li.textContent = `${hierarchy.name} (Source: ${hierarchy.source.join(", ")}, Quantity: ${hierarchy.quantity || 1})`;
+            ul.appendChild(li);
+
+            if (hierarchy.children && hierarchy.children.length > 0) {
+                const childUl = document.createElement("ul");
+                hierarchy.children.forEach(child => {
+                    const childElement = createHierarchyElement(child);
+                    childUl.appendChild(childElement);
+                });
+                ul.appendChild(childUl);
+            }
+            return ul;
+        }
+
+        // Handle form submission
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const formData = new FormData(form);
+
+            try {
+    		const response = await fetch("/get_hierarchy", {
+        		method: "POST",
+        		body: formData,
+    		});
+    		const data = await response.json();
+
+    		// Clear previous results
+    		resultsContainer.innerHTML = "";
+
+    		// Render hierarchy
+    		const hierarchyElement = createHierarchyElement(data.hierarchy);
+    		resultsContainer.appendChild(hierarchyElement);
+
+    		// Render non-crafted totals
+		if (data.non_crafted_totals) {
+    			const totalsHeading = document.createElement("h3");
+    			totalsHeading.textContent = "Non-Crafted Totals:";
+    			resultsContainer.appendChild(totalsHeading);
+
+    			const totalsList = document.createElement("ul");
+    			data.non_crafted_totals.forEach(item => {
+        			const li = document.createElement("li");
+        			li.textContent = `${item.name}: ${item.quantity}`;
+        			totalsList.appendChild(li);
+    			});
+    			resultsContainer.appendChild(totalsList);
+		}
+	} catch (error) {
+    		console.error("Error fetching hierarchy:", error);
+    		resultsContainer.textContent = "Error fetching hierarchy. Please try again.";
+	}
+        });
+    </script>
+</body>
+</html>
