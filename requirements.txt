@@ -6,5 +6,4 @@ jsonpatch
 jsonpointer==2.1
 jsonschema
 jsonschema-specifications
-os
 requests
