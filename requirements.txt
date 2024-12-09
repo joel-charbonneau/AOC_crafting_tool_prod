@@ -7,3 +7,4 @@ jsonpointer==2.1
 jsonschema
 jsonschema-specifications
 requests
+git-lfs
