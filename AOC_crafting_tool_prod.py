@@ -1,5 +1,5 @@
 from flask import Flask, request, render_template, jsonify
-import json, gdown, requests
+import json, gdown, requests, os
 from utils import build_hierarchy, calculate_total_requirements, identify_sources
 
 def load_all_items(file_path="all_items.json"):
