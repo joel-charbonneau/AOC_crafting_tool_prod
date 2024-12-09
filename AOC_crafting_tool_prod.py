@@ -30,8 +30,8 @@ app = Flask(__name__)
 @app.route("/")
 def index():
     """Homepage with item selection form."""
-    item_names = sorted([item["itemName"] for item in all_items])  # All item names sorted alphabetically
-    return render_template("index.html", items=item_names)
+    craftable_items = sorted([item["itemName"] for item in all_items if "_craftingRecipes" in item and item["_craftingRecipes"]])
+    return render_template("index.html", items=craftable_items)
 
 @app.route("/get_hierarchy", methods=["POST"])
 def get_hierarchy():
