@@ -2,24 +2,20 @@ from flask import Flask, request, render_template, jsonify
 import json, gdown, requests, os
 from utils import build_hierarchy, calculate_total_requirements, identify_sources
 
-# Define the path to your JSON file
-file_path = "all_items.json"
-
-# Load the JSON data
-def load_all_items(file_path):
+def fetch_all_items_json():
+    url = "https://github.com/joel-charbonneau/AOC_crafting_tool_prod/blob/main/all_items.json"  # Replace with your Raw URL
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        return data
-    except FileNotFoundError:
-        print(f"Error: {file_path} not found.")
-        return []
-    except json.JSONDecodeError:
-        print(f"Error: Failed to decode JSON from {file_path}.")
-        return []
+        response = requests.get(url)
+        response.raise_for_status()  # Raise an error for bad responses
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching all_items.json: {e}")
+        return None
 
 # Use the function to load the items
-all_items = load_all_items(file_path)
+all_items = fetch_all_items_json()
+if all_items is None:
+    raise RuntimeError("Failed to load all_items.json from external source")
 
 # Example: Print the number of items loaded
 if all_items:
