@@ -1,31 +1,51 @@
-def build_hierarchy(item_name, items_data):
-    """Build a hierarchy of the item's crafting requirements."""
+def build_hierarchy(item_name, items_data, visited=None):
+    """
+    Build the crafting hierarchy for a given item.
+    Detect and handle cyclic dependencies.
+    """
+    # Initialize the visited set on the first call
+    if visited is None:
+        visited = set()
+
     # Find the item in the dataset by its itemName
     item = next((i for i in items_data if i["itemName"] == item_name), None)
     if not item:
-        return {"name": item_name, "source": ["unknown"], "children": []}
+        return None  # Skip items not found in the dataset
 
-    # Identify sources using the updated identify_sources function
+    # Detect cyclic dependency
+    if item_name in visited:
+        return None  # Skip cyclic dependencies
+
+    # Mark the item as visited
+    visited.add(item_name)
+
+    # Determine the source(s) of the item
     sources = identify_sources(item)
 
     # Recursively build the hierarchy for crafted items
     children = []
-    if "crafted" in sources:
-        for recipe in item.get("_craftingRecipes", []):
-            for ingredient in recipe.get("generalResourceCost", []):  # Safely get ingredient list
-                ingredient_item = ingredient.get("_item", {})
-                ingredient_name = ingredient_item.get("itemName", "")
-                if ingredient_name:
-                    ingredient_quantity = ingredient.get("quantity", 1)  # Default to 1 if quantity is missing
-                    sub_hierarchy = build_hierarchy(ingredient_name, items_data)
-                    sub_hierarchy["quantity"] = ingredient_quantity
-                    children.append(sub_hierarchy)
+    if "_craftingRecipes" in item:
+        for recipe in item["_craftingRecipes"]:
+            for cost_key in ["primaryResourceCosts", "generalResourceCost"]:
+                for ingredient in recipe.get(cost_key, []):
+                    ingredient_item = ingredient.get("_item", {})
+                    ingredient_name = ingredient_item.get("itemName", "")
+                    if ingredient_name:
+                        ingredient_quantity = ingredient.get("quantity", 1)
+                        sub_hierarchy = build_hierarchy(ingredient_name, items_data, visited)
+                        if sub_hierarchy:  # Add only non-None sub-hierarchies
+                            sub_hierarchy["quantity"] = ingredient_quantity
+                            children.append(sub_hierarchy)
 
+    # Remove the item from visited before returning
+    visited.remove(item_name)
+
+    # Return the hierarchy only if it has meaningful data
     return {
         "name": item["itemName"],
         "source": sources,
         "children": children,
-    }
+    } if children or sources else None
 
 def calculate_total_requirements(hierarchy, totals=None, multiplier=1):
     """
@@ -39,7 +59,7 @@ def calculate_total_requirements(hierarchy, totals=None, multiplier=1):
     current_quantity = hierarchy.get("quantity", 1) * multiplier
 
     # If the item is non-crafted, add its quantity to the totals
-    if "crafted" not in hierarchy.get("source", []):
+    if any(tag in hierarchy.get("source", []) for tag in ["drop", "vendor"]):
         item_name = hierarchy["name"]
         if item_name not in totals:
             totals[item_name] = {
@@ -56,20 +76,45 @@ def calculate_total_requirements(hierarchy, totals=None, multiplier=1):
     # Convert the totals dictionary to a list of dictionaries for consistency
     return list(totals.values())
 
-
 def identify_sources(item):
     """Identify all applicable sources for an item."""
     sources = []
-    
+
+    # Helper function to extract formatted certification and profession
+    def get_cert_and_profession(item):
+        certification_tag = item.get("certificationTag", {}).get("tagName", "")
+        profession_tag = item.get("professionTag", {}).get("tagName", "")
+        if certification_tag and profession_tag:
+            cert_level = certification_tag.split(".")[-1]  # E.g., "Novice"
+            profession = profession_tag.split(".")[-1]  # E.g., "AnimalHusbandry"
+            return f"{cert_level} {profession}"
+        return None
+
+    # Check for crafted items
     if "_craftingRecipes" in item and item["_craftingRecipes"]:
-        sources.append("crafted")
+        cert_and_prof = get_cert_and_profession(item)
+        if cert_and_prof:
+            sources.append(cert_and_prof)
+        else:
+            sources.append("crafted")
+
+    # Check for drop sources
     if "_droppedBy" in item and item["_droppedBy"]:
         sources.append("drop")
+
+    # Check for vendor sources
     if "_soldBy" in item and item["_soldBy"]:
         sources.append("vendor")
+
+    # Check for gathered items
     if item.get("gameplayTags", {}).get("parentTags", []):
         parent_tags = [tag["tagName"] for tag in item["gameplayTags"]["parentTags"]]
         if "Artisanship.Gathering" in parent_tags and "Item.Resource.Raw" in parent_tags:
-            sources.append("gathered")
-    
+            cert_and_prof = get_cert_and_profession(item)
+            if cert_and_prof:
+                sources.append(cert_and_prof)
+            else:
+                sources.append("gathered")
+
     return sources if sources else ["unknown"]
+
