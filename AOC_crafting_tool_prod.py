@@ -5,17 +5,17 @@ from utils import build_hierarchy, calculate_total_requirements, identify_source
 def fetch_all_items_json():
     url = "https://github.com/joel-charbonneau/AOC_crafting_tool_prod/raw/refs/heads/main/all_items.json"  # Replace with your Raw URL
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=10)  # Added timeout for reliability
         response.raise_for_status()  # Raise an error for bad responses
         return response.json()
     except requests.exceptions.RequestException as e:
         print(f"Error fetching all_items.json: {e}")
-        return None
+        return []  # Return an empty list as a fallback
 
 # Use the function to load the items
 all_items = fetch_all_items_json()
-if all_items is None:
-    raise RuntimeError("Failed to load all_items.json from external source")
+if not all_items:
+    print("Warning: No items loaded. The application may have limited functionality.")
 
 # Example: Print the number of items loaded
 if all_items:
@@ -45,4 +45,5 @@ def get_hierarchy():
 
 # Run the app
 if __name__ == "__main__":
-    app.run(debug=True)
+    from waitress import serve
+    serve(app, host="0.0.0.0", port=8080)

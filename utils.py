@@ -80,13 +80,14 @@ def identify_sources(item):
     """Identify all applicable sources for an item."""
     sources = []
 
-    # Helper function to extract formatted certification and profession
     def get_cert_and_profession(item):
+        """Extract formatted certification and profession without 'None' values."""
         certification_tag = item.get("certificationTag", {}).get("tagName", "")
         profession_tag = item.get("professionTag", {}).get("tagName", "")
-        if certification_tag and profession_tag:
-            cert_level = certification_tag.split(".")[-1]  # E.g., "Novice"
-            profession = profession_tag.split(".")[-1]  # E.g., "AnimalHusbandry"
+
+        if certification_tag and profession_tag:  # Ensure both are valid
+            cert_level = certification_tag.split(".")[-1]  # Extract last part of certification
+            profession = profession_tag.split(".")[-1]  # Extract last part of profession
             return f"{cert_level} {profession}"
         return None
 
@@ -107,14 +108,12 @@ def identify_sources(item):
         sources.append("vendor")
 
     # Check for gathered items
-    if item.get("gameplayTags", {}).get("parentTags", []):
-        parent_tags = [tag["tagName"] for tag in item["gameplayTags"]["parentTags"]]
-        if "Artisanship.Gathering" in parent_tags and "Item.Resource.Raw" in parent_tags:
-            cert_and_prof = get_cert_and_profession(item)
-            if cert_and_prof:
-                sources.append(cert_and_prof)
-            else:
-                sources.append("gathered")
+    parent_tags = item.get("gameplayTags", {}).get("parentTags", [])
+    if any(tag.get("tagName") == "Artisanship.Gathering" for tag in parent_tags):
+        cert_and_prof = get_cert_and_profession(item)
+        if cert_and_prof:
+            sources.append(cert_and_prof)
+        else:
+            sources.append("gathered")
 
     return sources if sources else ["unknown"]
-
