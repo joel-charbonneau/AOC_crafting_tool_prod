@@ -86,11 +86,11 @@ def identify_sources(item):
         certification_tag = item.get("certificationTag", {}).get("tagName", "")
         profession_tag = item.get("professionTag", {}).get("tagName", "")
 
-	if certification_tag and certification_tag != "None" and profession_tag and profession_tag != "None":
-	    cert_level = certification_tag.split(".")[-1]
-	    profession = profession_tag.split(".")[-1]
-	    return f"{cert_level} {profession}"
-	return None
+        if certification_tag and certification_tag != "None" and profession_tag and profession_tag != "None":
+            cert_level = certification_tag.split(".")[-1]
+            profession = profession_tag.split(".")[-1]
+            return f"{cert_level} {profession}"
+        return None
 
     # Check for crafted items
     if "_craftingRecipes" in item and item["_craftingRecipes"]:
