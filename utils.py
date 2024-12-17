@@ -47,38 +47,38 @@ def build_hierarchy(item_name, items_data, visited=None):
         "children": children,
     } if children or sources else None
 
-def calculate_total_requirements(hierarchy, totals=None, multiplier=1):
+def calculate_total_requirements(hierarchy, totals=None, multiplier=1, visited=None):
     """
     Calculate the total quantities of raw materials and vendor-purchased items required,
-    excluding crafted or processed items.
+    excluding crafted or processed items. Avoid double-counting by aggregating quantities.
     """
     if totals is None:
         totals = {}
+    if visited is None:
+        visited = set()
 
     # Apply the current item's quantity multiplier
     current_quantity = hierarchy.get("quantity", 1) * multiplier
     sources = hierarchy.get("source", [])
 
-    # Identify if the item has crafting recipes (processed/crafted item)
-    is_crafted_or_processed = "crafted" in sources or "Novice" in sources or "Apprentice" in sources or "Journeyman" in sources or "Master" in sources or "Grandmaster" in sources
+    # Determine if the item is crafted or processed
+    is_crafted_or_processed = "crafted" in sources or any(
+        rank in sources for rank in ["Novice", "Apprentice", "Journeyman", "Master", "Grandmaster"]
+    )
+    is_vendor = "vendor" in sources
 
-    # Include only items that are vendor-sourced or have no crafting recipes
-    if "vendor" in sources and not is_crafted_or_processed:
+    # Include only vendor or raw material items
+    if (is_vendor and not is_crafted_or_processed) or (not is_crafted_or_processed and not hierarchy.get("children")):
         item_name = hierarchy["name"]
-        if item_name not in totals:
-            totals[item_name] = {"name": item_name, "quantity": 0, "source": sources}
-        totals[item_name]["quantity"] += current_quantity
-
-    # Raw materials with no crafting recipes
-    if not hierarchy.get("children") and not is_crafted_or_processed:
-        item_name = hierarchy["name"]
-        if item_name not in totals:
-            totals[item_name] = {"name": item_name, "quantity": 0, "source": sources}
-        totals[item_name]["quantity"] += current_quantity
+        if item_name not in visited:
+            visited.add(item_name)
+            if item_name not in totals:
+                totals[item_name] = {"name": item_name, "quantity": 0, "source": sources}
+            totals[item_name]["quantity"] += current_quantity
 
     # Recursively process children with the updated multiplier
     for child in hierarchy.get("children", []):
-        calculate_total_requirements(child, totals, current_quantity)
+        calculate_total_requirements(child, totals, current_quantity, visited)
 
     # Return totals as a sorted list
     return sorted(totals.values(), key=lambda x: x["name"])
