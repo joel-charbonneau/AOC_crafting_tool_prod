@@ -49,32 +49,40 @@ def build_hierarchy(item_name, items_data, visited=None):
 
 def calculate_total_requirements(hierarchy, totals=None, multiplier=1):
     """
-    Calculate the total quantities of bottom-level items required for a recipe,
-    prioritizing raw, vendor, and drop items. Propagate quantities correctly.
+    Calculate the total quantities of raw materials and vendor items required,
+    excluding crafted items unless vendor-sourced without crafting recipes.
     """
     if totals is None:
         totals = {}
 
-    # Current item's quantity after applying the multiplier
+    # Apply the current item's quantity multiplier
     current_quantity = hierarchy.get("quantity", 1) * multiplier
-
-    # Check if the current item is non-crafted (e.g., vendor, drop, gathered)
     sources = hierarchy.get("source", [])
-    if "vendor" in sources or "drop" in sources or "gathered" in sources:
+
+    # Determine if the item is crafted (has crafting recipes)
+    is_crafted = "crafted" in sources
+    is_vendor = "vendor" in sources
+
+    # Check if the item is raw material (specific profession ranks)
+    profession_ranks = ["Novice", "Apprentice", "Journeyman", "Master", "Grandmaster"]
+    is_raw_material = any(rank in source for rank in profession_ranks for source in sources)
+
+    # Include vendor items if not crafted, or include raw materials
+    if (is_vendor and not is_crafted) or is_raw_material:
         item_name = hierarchy["name"]
         if item_name not in totals:
             totals[item_name] = {
                 "name": item_name,
                 "quantity": 0,
-                "source": sources,
+                "source": sources
             }
         totals[item_name]["quantity"] += current_quantity
 
-    # Recursively process children
+    # Recursively process children with the updated multiplier
     for child in hierarchy.get("children", []):
         calculate_total_requirements(child, totals, current_quantity)
 
-    # Return totals as a list of dictionaries for consistency
+    # Return totals as a sorted list
     return sorted(totals.values(), key=lambda x: x["name"])
 
 def identify_sources(item):
