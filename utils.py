@@ -50,7 +50,7 @@ def build_hierarchy(item_name, items_data, visited=None):
 def calculate_total_requirements(hierarchy, totals=None, multiplier=1):
     """
     Calculate the total quantities of bottom-level items required for a recipe,
-    returning results in the same format as sum_non_crafted_items.
+    prioritizing raw and vendor items.
     """
     if totals is None:
         totals = {}
@@ -58,14 +58,15 @@ def calculate_total_requirements(hierarchy, totals=None, multiplier=1):
     # Current item's quantity after applying the multiplier
     current_quantity = hierarchy.get("quantity", 1) * multiplier
 
-    # If the item is non-crafted, add its quantity to the totals
-    if any(tag in hierarchy.get("source", []) for tag in ["drop", "vendor"]):
+    # Determine if the current item is raw or vendor-sourced
+    sources = hierarchy.get("source", [])
+    if "vendor" in sources or "drop" in sources or "gathered" in sources:
         item_name = hierarchy["name"]
         if item_name not in totals:
             totals[item_name] = {
                 "name": item_name,
                 "quantity": 0,
-                "source": hierarchy.get("source", []),
+                "source": sources,
             }
         totals[item_name]["quantity"] += current_quantity
 
@@ -73,8 +74,8 @@ def calculate_total_requirements(hierarchy, totals=None, multiplier=1):
     for child in hierarchy.get("children", []):
         calculate_total_requirements(child, totals, current_quantity)
 
-    # Convert the totals dictionary to a list of dictionaries for consistency
-    return list(totals.values())
+    # Return totals as a list of dictionaries for consistency
+    return sorted(totals.values(), key=lambda x: x["name"])
 
 def identify_sources(item):
     """Identify all applicable sources for an item."""
@@ -85,11 +86,11 @@ def identify_sources(item):
         certification_tag = item.get("certificationTag", {}).get("tagName", "")
         profession_tag = item.get("professionTag", {}).get("tagName", "")
 
-        if certification_tag and profession_tag:  # Ensure both are valid
-            cert_level = certification_tag.split(".")[-1]  # Extract last part of certification
-            profession = profession_tag.split(".")[-1]  # Extract last part of profession
-            return f"{cert_level} {profession}"
-        return None
+	if certification_tag and certification_tag != "None" and profession_tag and profession_tag != "None":
+		cert_level = certification_tag.split(".")[-1]
+		profession = profession_tag.split(".")[-1]
+		return f"{cert_level} {profession}"
+	return None
 
     # Check for crafted items
     if "_craftingRecipes" in item and item["_craftingRecipes"]:
