@@ -7,6 +7,22 @@
     <style>
         ul { list-style-type: none; }
         li { margin: 5px 0; }
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh; /* Ensures the page fills the viewport */
+            margin: 0;
+            padding: 0;
+        }
+        footer {
+            margin-top: auto; /* Pushes the footer to the bottom */
+            text-align: center;
+            font-size: 0.9em;
+            color: #555;
+            background-color: #f8f8f8;
+            padding: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -22,6 +38,7 @@
     </form>
     <h2>Results:</h2>
     <div id="results"></div>
+
     <script>
         const form = document.getElementById("item-form");
         const resultsContainer = document.getElementById("results");
@@ -51,48 +68,50 @@
             const formData = new FormData(form);
 
             try {
-    		const response = await fetch("/get_hierarchy", {
-        		method: "POST",
-        		body: formData,
-    		});
-    		const data = await response.json();
+                const response = await fetch("/get_hierarchy", {
+                    method: "POST",
+                    body: formData,
+                });
+                const data = await response.json();
 
-    		// Clear previous results
-    		resultsContainer.innerHTML = "";
+                // Clear previous results
+                resultsContainer.innerHTML = "";
 
-    		// Render hierarchy
-    		const hierarchyElement = createHierarchyElement(data.hierarchy);
-    		resultsContainer.appendChild(hierarchyElement);
+                // Render hierarchy
+                if (data.hierarchy) {
+                    const hierarchyElement = createHierarchyElement(data.hierarchy);
+                    resultsContainer.appendChild(hierarchyElement);
+                }
 
-    		// Render non-crafted totals
-		if (data.non_crafted_totals) {
-    			const totalsHeading = document.createElement("h3");
-    			totalsHeading.textContent = "Non-Crafted Totals:";
-    			resultsContainer.appendChild(totalsHeading);
+                // Render non-crafted totals
+                if (data.non_crafted_totals) {
+                    const totalsHeading = document.createElement("h3");
+                    totalsHeading.textContent = "Non-Crafted Totals:";
+                    resultsContainer.appendChild(totalsHeading);
 
-    			const totalsList = document.createElement("ul");
-    			data.non_crafted_totals.forEach(item => {
-        			const li = document.createElement("li");
-        			li.textContent = `${item.name}: ${item.quantity}`;
-        			totalsList.appendChild(li);
-    			});
-    			resultsContainer.appendChild(totalsList);
-		}
-	} catch (error) {
-    		console.error("Error fetching hierarchy:", error);
-    		resultsContainer.textContent = "Error fetching hierarchy. Please try again.";
-	}
+                    const totalsList = document.createElement("ul");
+                    data.non_crafted_totals.forEach(item => {
+                        const li = document.createElement("li");
+                        li.textContent = `${item.name}: ${item.quantity}`;
+                        totalsList.appendChild(li);
+                    });
+                    resultsContainer.appendChild(totalsList);
+                }
+            } catch (error) {
+                console.error("Error fetching hierarchy:", error);
+                resultsContainer.textContent = "Error fetching hierarchy. Please try again.";
+            }
         });
     </script>
-<footer style="text-align: center; margin-top: 20px; font-size: 0.9em; color: #555;">
-    <p>
-        &copy; 2024 <strong>DreggsOfSociety</strong> - All intellectual property and assets related to 
-        <em>Ashes of Creation</em> are the property of <strong>Intrepid Studios</strong>. 
-        This tool is fan-made, not affiliated with or endorsed by <em>Ashes of Creation</em> or Intrepid Studios. 
-        Item data is sourced from <a href="https://ashescodex.com" target="_blank" rel="noopener noreferrer">AshesCodex.com</a>. 
-        I'm a data scientist, not a developer, so this page will be buggy, ineffecient, and ugly.
-    </p>
-</footer>
 
+    <footer>
+        <p>
+            &copy; 2024 <strong>DreggsOfSociety</strong> - All intellectual property and assets related to 
+            <em>Ashes of Creation</em> are the property of <strong>Intrepid Studios</strong>. 
+            This tool is fan-made, not affiliated with or endorsed by <em>Ashes of Creation</em> or Intrepid Studios. 
+            Item data is sourced from <a href="https://ashescodex.com" target="_blank" rel="noopener noreferrer">AshesCodex.com</a>. 
+            I'm a data scientist, not a developer, so this page will be buggy, inefficient, and ugly.
+        </p>
+    </footer>
 </body>
 </html>

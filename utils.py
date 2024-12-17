@@ -50,7 +50,7 @@ def build_hierarchy(item_name, items_data, visited=None):
 def calculate_total_requirements(hierarchy, totals=None, multiplier=1):
     """
     Calculate the total quantities of bottom-level items required for a recipe,
-    prioritizing raw and vendor items.
+    prioritizing raw, vendor, and drop items. Propagate quantities correctly.
     """
     if totals is None:
         totals = {}
@@ -58,7 +58,7 @@ def calculate_total_requirements(hierarchy, totals=None, multiplier=1):
     # Current item's quantity after applying the multiplier
     current_quantity = hierarchy.get("quantity", 1) * multiplier
 
-    # Determine if the current item is raw or vendor-sourced
+    # Check if the current item is non-crafted (e.g., vendor, drop, gathered)
     sources = hierarchy.get("source", [])
     if "vendor" in sources or "drop" in sources or "gathered" in sources:
         item_name = hierarchy["name"]
@@ -70,7 +70,7 @@ def calculate_total_requirements(hierarchy, totals=None, multiplier=1):
             }
         totals[item_name]["quantity"] += current_quantity
 
-    # Recursively process children with the updated multiplier
+    # Recursively process children
     for child in hierarchy.get("children", []):
         calculate_total_requirements(child, totals, current_quantity)
 
